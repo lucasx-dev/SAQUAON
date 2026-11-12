@@ -27,6 +27,7 @@ interface KioskMarketplaceProps {
   filteredBeach?: string;
   onClearBeachFilter: () => void;
   onReview: (merchant: KioskMerchant) => void;
+  onReport?: (merchant: KioskMerchant) => void;
 }
 
 export const KioskMarketplace: React.FC<KioskMarketplaceProps> = ({
@@ -34,6 +35,7 @@ export const KioskMarketplace: React.FC<KioskMarketplaceProps> = ({
   filteredBeach,
   onClearBeachFilter,
   onReview,
+  onReport,
 }) => {
   const { merchants, loading, error } = useData();
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
@@ -293,6 +295,15 @@ export const KioskMarketplace: React.FC<KioskMarketplaceProps> = ({
                         >
                           Avaliar
                         </button>
+                        {onReport && (
+                          <button
+                            type="button"
+                            onClick={() => onReport(merchant)}
+                            className="text-[11px] font-bold text-slate-400 hover:text-red-600 hover:underline cursor-pointer"
+                          >
+                            Denunciar
+                          </button>
+                        )}
                       </div>
 
                       {merchant.verified && (

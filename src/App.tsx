@@ -16,6 +16,10 @@ import { MobileFloatingBar } from './components/MobileFloatingBar';
 import { AuthModal } from './components/AuthModal';
 import { ReviewModal } from './components/ReviewModal';
 import { ConfigNotice } from './components/ConfigNotice';
+import { Community } from './components/Community';
+import { MyBusinessModal } from './components/MyBusinessModal';
+import { AdminPanel } from './components/AdminPanel';
+import { ReportDialog, type ReportTargetInfo } from './components/ReportDialog';
 import { useAuth } from './context/AuthContext';
 import { useData } from './context/DataContext';
 import type { KioskMerchant, PlanCode } from './types';
@@ -24,6 +28,9 @@ export default function App() {
   const [isMerchantModalOpen, setIsMerchantModalOpen] = useState<boolean>(false);
   const [selectedPlanForModal, setSelectedPlanForModal] = useState<PlanCode>('pago');
   const [reviewTarget, setReviewTarget] = useState<KioskMerchant | null>(null);
+  const [editBusinessId, setEditBusinessId] = useState<string | null>(null);
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
+  const [reportTarget, setReportTarget] = useState<ReportTargetInfo | null>(null);
   const { requireAuth } = useAuth();
   const { refreshMerchants } = useData();
   const [isUserPreviewModalOpen, setIsUserPreviewModalOpen] = useState<boolean>(false);
@@ -49,6 +56,10 @@ export default function App() {
   // Avaliar também exige estar logado
   const handleReview = (merchant: KioskMerchant) => {
     requireAuth(() => setReviewTarget(merchant), { view: 'login' });
+  };
+
+  const handleReportMerchant = (merchant: KioskMerchant) => {
+    requireAuth(() => setReportTarget({ tipo: 'estabelecimento', id: merchant.id, titulo: merchant.name }), { view: 'login' });
   };
 
   const handleSelectBeachFromHero = (beachId: string) => {
@@ -82,6 +93,8 @@ export default function App() {
       <Navbar
         onOpenMerchantModal={() => handleOpenMerchantModal('pago')}
         onOpenAppPreview={handleOpenAppPreview}
+        onEditBusiness={setEditBusinessId}
+        onOpenAdmin={() => setIsAdminOpen(true)}
       />
 
       {/* Main landing content */}
@@ -110,6 +123,7 @@ export default function App() {
           filteredBeach={filteredMarketplaceBeach}
           onClearBeachFilter={() => setFilteredMarketplaceBeach(undefined)}
           onReview={handleReview}
+          onReport={handleReportMerchant}
         />
 
         {/* 5. WSL Saquarema Pro & Sporting/Cultural Events */}
@@ -120,6 +134,9 @@ export default function App() {
 
         {/* 7. Social Proof, Testimonials & FAQ */}
         <SocialProofAndFaq onOpenAppPreview={handleOpenAppPreview} />
+
+        {/* 8. Comunidade: publicações, comentários e denúncias */}
+        <Community onReport={setReportTarget} />
       </main>
 
       {/* Footer */}
@@ -156,6 +173,19 @@ export default function App() {
         onClose={() => setReviewTarget(null)}
         onSaved={() => void refreshMerchants()}
       />
+
+      {/* Editar estabelecimento (dados, fotos, cardápio, promoções) */}
+      <MyBusinessModal
+        businessId={editBusinessId}
+        onClose={() => setEditBusinessId(null)}
+        onSaved={() => void refreshMerchants()}
+      />
+
+      {/* Painel do administrador */}
+      <AdminPanel open={isAdminOpen} onClose={() => setIsAdminOpen(false)} onChanged={() => void refreshMerchants()} />
+
+      {/* Denúncias */}
+      <ReportDialog target={reportTarget} onClose={() => setReportTarget(null)} />
 
       {/* Login / signup / password recovery */}
       <AuthModal />

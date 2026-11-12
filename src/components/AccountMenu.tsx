@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LogOut, Store, Plus, Loader2 } from 'lucide-react';
+import { ChevronDown, LogOut, Store, Plus, Loader2, Pencil, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api, type MyBusiness } from '../lib/api';
 import { translateDbError } from '../lib/validation';
@@ -7,6 +7,8 @@ import { getInitials } from '../lib/format';
 
 interface AccountMenuProps {
   onOpenMerchantModal: () => void;
+  onEditBusiness?: (id: string) => void;
+  onOpenAdmin?: () => void;
 }
 
 const TIPO_LABEL: Record<string, string> = {
@@ -18,8 +20,8 @@ const TIPO_LABEL: Record<string, string> = {
 
 const PLANO_LABEL: Record<string, string> = { gratuito: 'Gratuito', pago: 'Pro', premium: 'Master' };
 
-export const AccountMenu: React.FC<AccountMenuProps> = ({ onOpenMerchantModal }) => {
-  const { user, profile, signOut } = useAuth();
+export const AccountMenu: React.FC<AccountMenuProps> = ({ onOpenMerchantModal, onEditBusiness, onOpenAdmin }) => {
+  const { user, profile, signOut, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [businesses, setBusinesses] = useState<MyBusiness[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -107,7 +109,19 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ onOpenMerchantModal })
                 <li key={b.id} className="text-xs bg-slate-50 rounded-xl p-2.5 border border-slate-100">
                   <p className="font-bold text-slate-800 flex items-center gap-1.5">
                     <Store className="w-3.5 h-3.5 text-[#004F8A] shrink-0" />
-                    <span className="truncate">{b.nome}</span>
+                    <span className="truncate flex-1">{b.nome}</span>
+                    {onEditBusiness && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpen(false);
+                          onEditBusiness(b.id);
+                        }}
+                        className="flex items-center gap-1 text-[11px] font-bold text-[#004F8A] hover:underline cursor-pointer shrink-0"
+                      >
+                        <Pencil className="w-3 h-3" /> Editar
+                      </button>
+                    )}
                   </p>
                   <p className="text-slate-500 mt-0.5">
                     Plano {PLANO_LABEL[b.plano] ?? b.plano}
@@ -133,6 +147,21 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ onOpenMerchantModal })
             <Plus className="w-4 h-4" />
             <span>Cadastrar novo estabelecimento</span>
           </button>
+
+          {isAdmin && onOpenAdmin && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onOpenAdmin();
+              }}
+              className="w-full flex items-center gap-2 text-xs font-bold text-[#004F8A] hover:bg-[#004F8A]/5 px-2.5 py-2 rounded-xl transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Painel do administrador</span>
+            </button>
+          )}
 
           <button
             type="button"

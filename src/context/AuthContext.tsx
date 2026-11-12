@@ -28,6 +28,7 @@ export interface SignUpInput {
   email: string;
   senha: string;
   tipo: SignupType;
+  captchaToken?: string;
 }
 
 type Result = { error?: string };
@@ -44,9 +45,9 @@ interface AuthContextValue {
   /** Roda a ação se a pessoa estiver logada; senão abre o login e roda a ação depois do acesso. */
   requireAuth: (action: () => void, options?: OpenAuthOptions) => void;
   signUp: (input: SignUpInput) => Promise<Result & { needsConfirmation?: boolean }>;
-  signIn: (email: string, password: string) => Promise<Result>;
+  signIn: (email: string, password: string, captchaToken?: string) => Promise<Result>;
   signOut: () => Promise<void>;
-  sendPasswordReset: (email: string) => Promise<Result>;
+  sendPasswordReset: (email: string, captchaToken?: string) => Promise<Result>;
   updatePassword: (newPassword: string) => Promise<Result>;
   refreshProfile: () => Promise<void>;
 }
@@ -141,12 +142,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ----------------------------------------------------- ações de conta
   const signUp = useCallback<AuthContextValue['signUp']>(
-    async ({ nome, email, senha, tipo }) => {
+    async ({ nome, email, senha, tipo, captchaToken }) => {
       if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
       const { data, error } = await supabase.auth.signUp({
         email,
         password: senha,
-        options: { data: { nome, tipo }, emailRedirectTo: window.location.origin },
+        options: { data: { nome, tipo }, emailRedirectTo: window.location.origin, captchaToken },
       });
       if (error) return { error: translateAuthError(error) };
 
@@ -160,9 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const signIn = useCallback<AuthContextValue['signIn']>(
-    async (email, password) => {
+    async (email, password, captchaToken) => {
       if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
       if (error) return { error: translateAuthError(error) };
       finishLogin();
       return {};
@@ -175,9 +176,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   }, []);
 
-  const sendPasswordReset = useCallback<AuthContextValue['sendPasswordReset']>(async (email) => {
+  const sendPasswordReset = useCallback<AuthContextValue['sendPasswordReset']>(async (email, captchaToken) => {
     if (!isSupabaseConfigured) return { error: NOT_CONFIGURED };
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, captchaToken });
     if (error) return { error: translateAuthError(error) };
     return {};
   }, []);

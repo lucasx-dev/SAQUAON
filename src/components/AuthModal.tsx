@@ -4,6 +4,7 @@ import { SaquaOnLogo } from './Logo';
 import { useAuth } from '../context/AuthContext';
 import { checkPasswordRules, validateEmail, validateNewPassword, validatePersonName } from '../lib/validation';
 import type { SignupType } from '../types';
+import { Captcha, CAPTCHA_ENABLED } from './Captcha';
 
 type ConfirmKind = 'signup' | 'reset' | 'newpass';
 
@@ -35,6 +36,21 @@ export const AuthModal: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>('signup');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+
+  /** Sem token a verificação ainda não foi concluída; com o token usado, pede outra. */
+  const needCaptcha = (): boolean => {
+    if (CAPTCHA_ENABLED && !captchaToken) {
+      setFormError('Conclua a verificação de segurança antes de continuar.');
+      return true;
+    }
+    return false;
+  };
+  const usedCaptcha = () => {
+    setCaptchaToken(null);
+    setCaptchaReset((n) => n + 1);
+  };
 
   // Ao abrir, começa com o formulário limpo
   useEffect(() => {
@@ -85,11 +101,15 @@ export const AuthModal: React.FC = () => {
     if (emailRes.error) next.email = emailRes.error;
     if (!senha) next.senha = 'Informe sua senha.';
     if (fail(next)) return;
+    if (needCaptcha()) return;
 
     setSubmitting(true);
-    const res = await signIn(emailRes.value, senha);
+    const res = await signIn(emailRes.value, senha, captchaToken ?? undefined);
     setSubmitting(false);
-    if (res.error) setFormError(res.error);
+    if (res.error) {
+      setFormError(res.error);
+      usedCaptcha();
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -104,12 +124,14 @@ export const AuthModal: React.FC = () => {
     if (!next.senha && confirmar !== senha) next.confirmar = 'As senhas não são iguais.';
     if (!TIPOS.some((t) => t.id === tipo)) next.tipo = 'Escolha como você vai usar o SAQUA ON.';
     if (fail(next)) return;
+    if (needCaptcha()) return;
 
     setSubmitting(true);
-    const res = await signUp({ nome: nomeRes.value, email: emailRes.value, senha, tipo });
+    const res = await signUp({ nome: nomeRes.value, email: emailRes.value, senha, tipo, captchaToken: captchaToken ?? undefined });
     setSubmitting(false);
     if (res.error) {
       setFormError(res.error);
+      usedCaptcha();
     } else if (res.needsConfirmation) {
       setConfirmKind('signup');
       setAuthView('confirmacao');
@@ -120,12 +142,14 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     const emailRes = validateEmail(email);
     if (fail(emailRes.error ? { email: emailRes.error } : {})) return;
+    if (needCaptcha()) return;
 
     setSubmitting(true);
-    const res = await sendPasswordReset(emailRes.value);
+    const res = await sendPasswordReset(emailRes.value, captchaToken ?? undefined);
     setSubmitting(false);
     if (res.error) {
       setFormError(res.error);
+      usedCaptcha();
     } else {
       setConfirmKind('reset');
       setAuthView('confirmacao');
@@ -348,6 +372,7 @@ export const AuthModal: React.FC = () => {
                   Esqueci minha senha
                 </button>
               </div>
+              <Captcha key="login" onToken={setCaptchaToken} resetKey={captchaReset} />
               {formErrorBox}
               {submitButton('Entrar')}
               {switchLink('Ainda não tem conta?', 'Criar conta grátis', 'cadastro')}
@@ -420,6 +445,7 @@ export const AuthModal: React.FC = () => {
                 <span>Usamos seus dados só para criar e proteger sua conta, de acordo com a LGPD.</span>
               </p>
 
+              <Captcha key="cadastro" onToken={setCaptchaToken} resetKey={captchaReset} />
               {formErrorBox}
               {submitButton('Criar minha conta')}
               {switchLink('Já tem conta?', 'Entrar', 'login')}
@@ -429,6 +455,7 @@ export const AuthModal: React.FC = () => {
           {view === 'esqueci' && (
             <form onSubmit={handleForgot} noValidate className="space-y-4">
               {emailInput(true)}
+              <Captcha key="esqueci" onToken={setCaptchaToken} resetKey={captchaReset} />
               {formErrorBox}
               {submitButton('Enviar link de recuperação')}
               {switchLink('Lembrou a senha?', 'Voltar para entrar', 'login')}

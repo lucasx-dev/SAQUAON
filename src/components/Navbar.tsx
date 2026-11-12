@@ -6,6 +6,7 @@ import {
   Waves,
   Store,
   Calendar,
+  MessageCircle,
   ArrowRight,
   ShieldCheck,
   Landmark,
@@ -24,9 +25,11 @@ import { useAuth } from '../context/AuthContext';
 interface NavbarProps {
   onOpenMerchantModal: () => void;
   onOpenAppPreview: () => void;
+  onEditBusiness?: (id: string) => void;
+  onOpenAdmin?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenMerchantModal, onOpenAppPreview }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenMerchantModal, onOpenAppPreview, onEditBusiness, onOpenAdmin }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, profile, openAuthModal, signOut } = useAuth();
 
@@ -36,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMerchantModal, onOpenAppPr
     { label: 'Igreja Histórica', href: '#igreja', icon: Landmark },
     { label: 'Quiosques & Gastronomia', href: '#marketplace', icon: Store },
     { label: 'Eventos & WSL', href: '#eventos', icon: Calendar },
+    { label: 'Comunidade', href: '#comunidade', icon: MessageCircle },
     { label: 'Para Comerciantes', href: '#comerciantes', icon: Store, highlight: true },
   ];
 
@@ -160,6 +164,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMerchantModal, onOpenAppPr
               <Calendar className="w-3.5 h-3.5 text-[#004F8A]" />
               <span>WSL</span>
             </a>
+            <a
+              href="#comunidade"
+              className="text-xs font-bold text-[#0A1E2F] hover:text-[#004F8A] px-2.5 py-1.5 rounded-lg hover:bg-black/5 flex items-center gap-1"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-[#004F8A]" />
+              <span>Comunidade</span>
+            </a>
           </nav>
 
           {/* Action CTAs & Weather Capsule */}
@@ -175,7 +186,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMerchantModal, onOpenAppPr
             </div>
 
             {user ? (
-              <AccountMenu onOpenMerchantModal={onOpenMerchantModal} />
+              <AccountMenu onOpenMerchantModal={onOpenMerchantModal} onEditBusiness={onEditBusiness} onOpenAdmin={onOpenAdmin} />
             ) : (
               <button
                 type="button"
